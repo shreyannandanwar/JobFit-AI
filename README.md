@@ -1,6 +1,6 @@
-# JobFit AI
+# JobFir AI
 
-JobFit AI is a resume tailoring and document generation tool that turns a candidate resume and job description into a structured profile, a job-fit analysis, a tailored resume, and a cover letter.
+JobFir AI is a resume tailoring and document generation tool that turns a candidate resume and job description into a structured profile, a job-fit analysis, a tailored resume, and a cover letter.
 
 The project combines a FastAPI backend, a Streamlit interface, LangGraph workflows, and local persistence to keep the system simple to run while still providing auditable outputs.
 
