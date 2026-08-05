@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  jobfit-backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+    volumes:
+      - ./data:/app/data  # Persist SQLite locally
+    restart: unless-stopped

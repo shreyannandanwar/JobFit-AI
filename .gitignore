@@ -1,0 +1,52 @@
+# Python bytecode and cache directories
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and distribution artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs and local runtime data
+*.log
+*.sqlite
+*.sqlite3
+*.db
+jobfit_audit.db
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Streamlit and editor files
+.streamlit/secrets.toml
+.DS_Store
+.vscode/
+.idea/
+
+# Generated project data and exports
+output/generated/
+output/profile/
+profiles/*.json
+profiles/*.md
+
+# Test and coverage output
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+
