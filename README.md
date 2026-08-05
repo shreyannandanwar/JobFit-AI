@@ -155,3 +155,10 @@ The repository includes container support for local or platform-based deployment
 - The app keeps data local and lightweight by design.
 - SQLite is used for audit logging and job status tracking.
 - LLM output is treated as optional rather than mandatory, so the system can still produce usable documents without external model access.
+
+## demo
+<img width="1379" height="681" alt="Screenshot 2026-08-05 at 12 40 31 PM" src="https://github.com/user-attachments/assets/7207a18c-f531-45d5-b483-2dd82fa691c0" />
+interface - The platform
+
+<img width="1210" height="672" alt="Screenshot 2026-08-05 at 12 39 07 PM" src="https://github.com/user-attachments/assets/cf560c13-8a5e-49b2-af90-2f3136e40316" />
+Generation of Documents
