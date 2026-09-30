@@ -155,3 +155,47 @@ The repository includes container support for local or platform-based deployment
 - The app keeps data local and lightweight by design.
 - SQLite is used for audit logging and job status tracking.
 - LLM output is treated as optional rather than mandatory, so the system can still produce usable documents without external model access.
+
+## Contributing
+
+We welcome contributions from developers of all experience levels.
+
+### New to open source?
+
+Start with issues labelled:
+
+- `good first issue`
+- `help wanted`
+- `documentation`
+- `testing`
+
+Before starting work:
+
+1. Read `CONTRIBUTING.md`
+2. Find an open issue
+3. Comment that you'd like to work on it
+4. Wait for confirmation/assignment
+5. Create your branch
+6. Make your changes
+7. Run the tests
+8. Open a pull request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions.
+
+## 🎃 Hacktoberfest
+
+JobFit AI welcomes contributors during Hacktoberfest.
+
+You can contribute through:
+
+- Python development
+- Streamlit UI
+- Testing
+- Documentation
+- Resume/project parsing
+- AI/LLM improvements
+- Bug fixes
+- Developer tooling
+
+If you're new to open source, look for issues labelled
+`good first issue`.
