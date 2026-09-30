@@ -1,10 +1,21 @@
-# JobFir AI
+# JobFit AI
 
-JobFir AI is a resume tailoring and document generation tool that turns a candidate resume and job description into a structured profile, a job-fit analysis, a tailored resume, and a cover letter.
+> **JobFit AI is a free, open-source personal job workspace that lets users maintain their career profile, manage job applications, understand each opportunity through AI-powered job and company intelligence, generate tailored application materials, and prepare for interviews — all from one place.**
+
+Today, JobFit AI ships as the **AI engine** for that vision: a resume tailoring and document generation tool that turns a candidate resume and job description into a structured profile, a job-fit analysis, a tailored resume, and a cover letter. The rest of the platform — a job tracker, per-job workspaces, a dashboard, and multi-user accounts — is the direction the project is actively growing toward (see [Product Vision & Roadmap](#product-vision--roadmap)).
 
 The project combines a FastAPI backend, a Streamlit interface, LangGraph workflows, and local persistence to keep the system simple to run while still providing auditable outputs.
 
-## What It Does
+## The Product Loop
+
+```
+BUILD PROFILE → ADD JOB → UNDERSTAND JOB → ANALYZE FIT → TAILOR APPLICATION
+     → PREPARE → APPLY → TRACK → UPDATE STATUS → LEARN → ADD NEXT JOB
+```
+
+JobFit AI's resume parser, project intelligence, LangGraph workflows, company research, tailored document generation, and evaluation system are the AI engine underneath this loop, rather than being the product itself.
+
+## What It Does Today
 
 - Extracts structured profile data from an uploaded resume PDF.
 - Parses and normalizes project details from pasted text, PDF, or DOCX content.
@@ -156,6 +167,45 @@ The repository includes container support for local or platform-based deployment
 - SQLite is used for audit logging and job status tracking.
 - LLM output is treated as optional rather than mandatory, so the system can still produce usable documents without external model access.
 
+## Product Vision & Roadmap
+
+The long-term goal is to evolve JobFit AI from a single-resume tailoring tool into a full personal job-search platform. The current codebase (profile parsing, project intelligence, job analysis, tailored generation) becomes the AI engine that powers the features below.
+
+### Career Space (profile as the source of truth)
+
+- A single, reusable career profile (personal info, summary, skills, projects, experience, education, certifications, activities) instead of re-uploading a resume for every application.
+- The existing profile parser already extracts most of these fields, so this is an extension of the current system rather than a rewrite.
+
+### Job Workspace (the central screen)
+
+- A job spreadsheet/tracker (company, role, status, location, match score, deadline) as the main entry point, similar to a Notion/Sheets-style tracker with AI intelligence attached.
+- Each row opens a per-job workspace containing the job description, company intelligence, fit analysis, generated resume/cover letter, preparation notes, and activity — so nothing about an application is ever lost.
+- Application lifecycle statuses: `Saved → Preparing → Applied → Assessment → Interview → Offer`, plus `Rejected`, `Withdrawn`, and `Archived`.
+
+### Job & Company Intelligence
+
+- Extract explicit requirements from a job description (required vs. preferred skills).
+- Surface inferred/latent signals ("potential expectations") transparently, explaining *why* the system reached a conclusion rather than asserting it as fact.
+- Compare the candidate profile against the job across multiple dimensions (technical, experience, project, skill coverage, domain alignment) instead of collapsing fit into a single arbitrary match percentage.
+- Rank the user's projects by relevance to a target role, building on the existing project parsing and relevance logic.
+
+### Tailored Generation & Preparation
+
+- Generate a resume and cover letter scoped to a specific company/role, using only information present in the user's profile — building directly on today's tailoring and DOCX export pipeline.
+- A "Prepare for this job" view with likely technical topics, project-discussion talking points, and potential interview questions, framed as preparation material rather than guaranteed predictions.
+
+### Dashboard
+
+- A home view answering "Where am I in my job search?" — total/active applications, interviews, offers, and recent jobs — alongside the profile.
+
+### Platform & Cost Architecture
+
+- Moving from local JSON/SQLite storage to multi-user accounts with persistent, per-user job spaces is the biggest architectural shift this roadmap implies.
+- Because the goal is to stay free for users, the platform should favor free-tier auth/hosting/database options and avoid having a single API key fund unlimited AI generation for every user — for example, by supporting user-provided API keys/local models alongside hosted defaults.
+- The existing LLM abstraction (OpenAI, OpenRouter, Ollama, GitHub Models) is already a useful foundation for this "bring your own model" approach.
+
+This roadmap also broadens what Hacktoberfest contributors can work on — not just "add a feature to a resume generator," but help build an open-source AI job-management platform.
+
 ## demo
 <img width="1210" height="672" alt="Screenshot 2026-08-05 at 12 39 07 PM" src="https://github.com/user-attachments/assets/cf560c13-8a5e-49b2-af90-2f3136e40316" />
 interface - The platform
@@ -198,6 +248,8 @@ You can contribute through:
 
 - Python development
 - Streamlit UI
+- Job workspace / job tracker features
+- Job and company intelligence
 - Testing
 - Documentation
 - Resume/project parsing
