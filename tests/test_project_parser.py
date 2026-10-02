@@ -8,6 +8,31 @@ from app.core.profile_parser import parse_projects_text
 
 
 class ProjectParserTests(unittest.TestCase):
+    def test_duplicate_project_titles_keep_first_and_preserve_distinct_projects(self):
+        for duplicate_title in ("Task Tracker", "task tracker", "TASK TRACKER"):
+            with self.subTest(duplicate_title=duplicate_title):
+                text = f"""## Project Title: Task Tracker
+Description: The original task manager.
+Tech: Python, FastAPI
+
+## Project Title: {duplicate_title}
+Description: A duplicate that should not replace the original.
+Tech: React
+
+## Project Title: Analytics Dashboard
+Description: A distinct project.
+Tech: JavaScript
+"""
+                projects = parse_projects_text(text)
+
+                self.assertEqual([p["title"] for p in projects],
+                                 ["Task Tracker", "Analytics Dashboard"])
+                self.assertEqual(sum(p["title"].lower() == "task tracker" for p in projects), 1)
+                self.assertEqual(projects[0]["description"],
+                                 "Description: The original task manager.")
+                self.assertEqual(projects[0]["technologies"], ["Python", "FastAPI"])
+                self.assertEqual(projects[1]["technologies"], ["JavaScript"])
+
     def test_export_projects_to_json_file(self):
         projects = [{"title": "Sample Project", "description": "A sample project", "technologies": ["Python"]}]
 
