@@ -26,6 +26,8 @@ JobFit AI's resume parser, project intelligence, LangGraph workflows, company re
 
 ## Architecture
 
+See [Resume section detection](docs/PROFILE_PARSING.md) for the plain-text parsing rules and name fallback.
+
 The application is organized around a small number of clear layers:
 
 - `app/main.py` exposes the FastAPI endpoints for setup, generation, status checks, and file download.
