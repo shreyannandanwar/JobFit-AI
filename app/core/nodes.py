@@ -3,7 +3,7 @@ import re
 from typing import Any, Dict
 
 from app.core.memory import log_step
-from app.core.plagiarism_reducer import reduce_plagiarism_risk
+from app.core.content_contract import layout_input_from_profile
 from app.core.state import AgentState
 from app.core.tools import extract_relevant_excerpts, search_web
 
@@ -14,51 +14,6 @@ def _get_project_store_path() -> str:
     from pathlib import Path
     return str((Path(__file__).resolve().parents[1] / "output" / "profile" / "projects.json"))
 
-
-def _load_relevant_projects(profile: Dict[str, Any], jd_text: str, role_title: str) -> list[Dict[str, Any]]:
-    from pathlib import Path
-    import json
-
-    projects = profile.get("project_list") or []
-    if not projects:
-        project_store = Path(_get_project_store_path())
-        if project_store.exists():
-            try:
-                projects = json.loads(project_store.read_text(encoding="utf-8"))
-            except Exception:
-                projects = []
-
-    if not projects:
-        return []
-
-    def _normalize(token: str) -> str:
-        token = re.sub(r"[^a-z0-9]+", "", token.lower())
-        if token.endswith("ing") and len(token) > 4:
-            token = token[:-3]
-        elif token.endswith("s") and len(token) > 3:
-            token = token[:-1]
-        elif token.endswith("ed") and len(token) > 4:
-            token = token[:-2]
-        return token
-
-    jd_terms = {_normalize(token) for token in re.split(r"[^a-z0-9]+", f"{role_title} {jd_text}") if token}
-    jd_terms = {term for term in jd_terms if len(term) > 2}
-
-    scored = []
-    for project in projects:
-        title = str(project.get("title", "")).lower()
-        description = str(project.get("description", "")).lower()
-        technologies = " ".join(project.get("technologies", [])).lower()
-        content = f"{title} {description} {technologies}"
-        content_terms = {_normalize(token) for token in re.split(r"[^a-z0-9]+", content) if token}
-        overlap = sum(1 for term in jd_terms if term and term in content_terms)
-        title_overlap = sum(3 for term in jd_terms if term and term in {_normalize(token) for token in re.split(r"[^a-z0-9]+", title) if token})
-        tech_bonus = sum(2 for term in ["python", "xgboost", "prophet", "ml", "api", "forecast", "deploy", "backend", "data"] if term in content)
-        scored.append((overlap * 2 + title_overlap + tech_bonus, project))
-
-    scored.sort(key=lambda item: item[0], reverse=True)
-    selected = [project for _, project in scored[:2]]
-    return selected
 
 
 def _extract_company_name(jd_text: str) -> str:
@@ -100,23 +55,10 @@ def _extract_company_name(jd_text: str) -> str:
     return "Unknown Company"
 
 
-def _extract_skills(jd_text: str, resume_text: str) -> list[str]:
-    candidate_skills = [
-        "python",
-        "aws",
-        "docker",
-        "kubernetes",
-        "react",
-        "javascript",
-        "sql",
-        "java",
-        "machine learning",
-        "api",
-        "streamlit",
-    ]
-    text = f"{jd_text} {resume_text}".lower()
-    matched = [skill for skill in candidate_skills if skill in text]
-    return matched[:5] or ["python", "aws", "docker"]
+def _extract_skills(jd_text: str, resume_text: str = "", llm_cfg: dict | None = None) -> list[str]:
+    from app.core.jd_extraction import extract_jd
+    jd = extract_jd(jd_text, llm_cfg)
+    return jd.required_skills + [s for s in jd.preferred_skills if s not in jd.required_skills]
 
 
 # --- Node 1: Planner ---
@@ -323,7 +265,7 @@ def company_researcher_node(state: "TailoringState") -> Dict[str, Any]:  # type:
     jd_text = state.get("jd_text", "")
     job_id = state.get("job_id", "unknown")
 
-    skills = _extract_skills(jd_text, "")
+    skills = _extract_skills(jd_text, "", state.get("llm_config"))
     query = f"{company} {role} engineering culture tech stack"
 
     logger.info(f"[{job_id}] Company researcher: '{query}'")
@@ -361,9 +303,10 @@ def resume_tailor_node(state: "TailoringState") -> Dict[str, Any]:  # type: igno
     job_id = state.get("job_id", "unknown")
     llm_cfg = state.get("llm_config") or {}
 
-    required = _extract_skills(jd_text, "")
+    required = _extract_skills(jd_text, "", llm_cfg)
     resume_skills: list = profile.get("skills", [])
-    missing = [s for s in required if s not in resume_skills]
+    have = {s.lower() for s in resume_skills}
+    missing = [s for s in required if s not in have]
 
     if llm_cfg.get("provider"):
         from app.core.llm import llm_chat
@@ -395,7 +338,7 @@ def resume_tailor_node(state: "TailoringState") -> Dict[str, Any]:  # type: igno
         )
         bullets = [line.lstrip("•- ").strip() for line in raw.splitlines() if line.strip()]
     else:
-        matched = [s for s in required if s in resume_skills]
+        matched = [s for s in required if s in have]
         name = profile.get("name", "the applicant")
         bullets = [
             f"{name} is applying for the {role_title} role at {company_name}, "
@@ -449,9 +392,9 @@ def cover_letter_node(state: "TailoringState") -> Dict[str, Any]:  # type: ignor
         cover_letter_text = ""
 
     if not cover_letter_text or not cover_letter_text.strip():
-        relevant_projects = _load_relevant_projects(profile, jd_text, role_title)
+        all_projects = profile.get("project_list", [])
         project_mentions = []
-        for project in relevant_projects:
+        for project in all_projects[:3]:
             title = str(project.get("title", "")).strip()
             description = str(project.get("description", "")).strip()
             if title:
@@ -500,16 +443,15 @@ def cover_letter_node(state: "TailoringState") -> Dict[str, Any]:  # type: ignor
             "Thank you for your time and consideration."
         )
         cover_letter_text = "\n\n".join(filter(None, [opening, exp_sentence, project_para, company_para, closing]))
-        cover_letter_text = reduce_plagiarism_risk(
-            cover_letter_text,
-            context=f"{company_name} for the {role_title} role",
-        )
 
     log_step(job_id, "cover_letter", {"thought": f"Cover letter drafted, llm={bool(llm_cfg.get('provider'))}"})
     return {"cover_letter_text": cover_letter_text}
 
 
 def docx_export_node(state: "TailoringState") -> Dict[str, Any]:  # type: ignore[name-defined]
+    from datetime import datetime
+    from pathlib import Path
+
     from app.core.docx_generator import generate_cover_letter_docx, generate_resume_docx
 
     profile = state.get("user_profile", {})
@@ -520,10 +462,18 @@ def docx_export_node(state: "TailoringState") -> Dict[str, Any]:  # type: ignore
     cover_letter_text = state.get("cover_letter_text", "")
     job_id = state.get("job_id", "unknown")
 
-    profile = dict(profile)
-    profile["jd_text"] = jd_text
+    # Build the typed layout input from the legacy profile dict.
+    layout_data = layout_input_from_profile(profile, bullets)
 
-    resume_path = generate_resume_docx(profile, bullets, company_name, role_title)
+    # Determine output path.
+    project_root = Path(__file__).resolve().parents[2]
+    output_dir = project_root / "output" / "generated"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    safe_company = company_name.replace(" ", "_")
+    date_str = datetime.now().strftime("%Y%m%d")
+    resume_output = str(output_dir / f"resume_{safe_company}_{date_str}.docx")
+
+    resume_path = generate_resume_docx(layout_data, resume_output)
     cover_path = generate_cover_letter_docx(profile, company_name, role_title, cover_letter_text)
 
     logger.info(f"[{job_id}] DOCX exported: {resume_path}, {cover_path}")
