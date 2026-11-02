@@ -1,6 +1,6 @@
 from typing import List, Optional, Literal, Dict, Any, TypedDict
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # --- Audit Models (Saved to SQLite) ---
 class Finding(BaseModel):
@@ -15,6 +15,29 @@ class JobProfile(BaseModel):
     resume_text: str
     required_skills: List[str] = []
     company_name: Optional[str] = None
+
+class JobRecord(BaseModel):
+    company: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    status: Literal[
+        "saved",
+        "preparing",
+        "applied",
+        "interview",
+        "offer",
+        "rejected",
+        "withdrawn",
+    ] = "saved"
+    job_description: Optional[str] = None
+    location: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    @field_validator("company", "role")
+    @classmethod
+    def validate_non_empty_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("must not be empty or whitespace")
+        return value
 
 # --- LangGraph State (The "Brain" Memory) ---
 class AgentState(TypedDict):
