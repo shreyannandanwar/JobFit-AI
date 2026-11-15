@@ -27,6 +27,32 @@ def _api(method: str, path: str, **kwargs):
         st.stop()
 
 
+def _format_error(resp: requests.Response, default_msg: str = "Request failed") -> str:
+    """Safely extracts a readable error message and HTTP status code from a requests.Response."""
+    status_prefix = f"HTTP {resp.status_code}" if resp is not None and getattr(resp, "status_code", None) else "Error"
+    detail = None
+    if resp is not None:
+        try:
+            body = resp.json()
+            if isinstance(body, dict):
+                detail = body.get("detail") or body.get("message") or body.get("error")
+                if not detail and len(body) == 1:
+                    detail = list(body.values())[0]
+            elif isinstance(body, str):
+                detail = body
+        except Exception:
+            pass
+
+        if not detail and getattr(resp, "text", None):
+            raw_text = resp.text.strip()
+            if raw_text:
+                detail = raw_text
+
+    if detail:
+        return f"{status_prefix}: {detail}"
+    return f"{status_prefix}: {default_msg}"
+
+
 # --- Sidebar: profile status ---
 with st.sidebar:
     st.title("🎯 JobFit AI")
@@ -133,7 +159,7 @@ with tab_setup:
                     st.code(f)
                 st.rerun()
             else:
-                st.error(f"Failed to parse resume: {resp.text}")
+                st.error(f"Failed to parse resume: {_format_error(resp)}")
 
     st.divider()
     st.header("Step 2 – Add Your Projects (Optional)")
@@ -164,7 +190,7 @@ with tab_setup:
                     st.caption(f"Written to `{data.get('markdown_file', '')}`")
                     st.rerun()
                 else:
-                    st.error(f"Failed: {resp.text}")
+                    st.error(f"Failed: {_format_error(resp)}")
 
     with proj_tab_paste:
         with st.form("project_paste_form", clear_on_submit=True):
@@ -198,7 +224,7 @@ with tab_setup:
                     st.caption(f"Written to `{data.get('markdown_file', '')}`")
                     st.rerun()
                 else:
-                    st.error(f"Failed: {resp.text}")
+                    st.error(f"Failed: {_format_error(resp)}")
 
 # =============================================================================
 # TAB – CAREER PROFILE (single source of truth)
@@ -211,7 +237,7 @@ def _save_profile(changes: dict, reset_keys: tuple = ()) -> None:
         st.success("Saved.")
         st.rerun()
     else:
-        st.error(resp.json().get("detail", resp.text))
+        st.error(_format_error(resp, "Failed to save profile"))
 
 
 _ENTRY_SPECS = {
@@ -428,7 +454,7 @@ with tab_jobs:
                     st.session_state["selected_job_id"] = resp.json()["job_id"]
                     st.rerun()
                 else:
-                    st.error(resp.text)
+                    st.error(_format_error(resp, "Failed to add job"))
 
     all_jobs = _fetch_jobs()
     if not all_jobs:
@@ -556,7 +582,7 @@ with tab_generate:
                 })
 
             if not resp.ok:
-                st.error(f"Error: {resp.json().get('detail', resp.text)}")
+                st.error(f"Error: {_format_error(resp, 'Failed to submit generation job')}")
             else:
                 job_id = resp.json().get("job_id")
                 st.session_state["generated_job_id"] = job_id
